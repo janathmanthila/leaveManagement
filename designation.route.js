@@ -27,6 +27,16 @@ designationRoutes.route('/').get(function (req,res) {
     });
 });
 
+designationRoutes.route('/active').get(function (req,res) {
+    Designation.find({designation_status:true},function (err, designation) {
+        if (err)
+            console.log(err)
+        else {
+            res.json(designation)
+        }
+    });
+});
+
 
 // EDIT
 designationRoutes.route('/edit/:id').get(function (req,res) {

@@ -57,6 +57,8 @@ leaveAllocateRoutes.route('/').get(function (req,res) {
         .exec();
 });
 
+
+
 // DELETE
 leaveAllocateRoutes.route('/delete/:id').delete(function (req,res) {
     LeaveAllocate.findByIdAndRemove({_id:req.params.id}, function (err,designation) {

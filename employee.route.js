@@ -117,24 +117,37 @@ employeeRoutes.route("/delete/:id").delete(function (req, res) {
   // var Schema = mongoose.Schema;
   const CalendarEvent = mongoose.model('CalendarEvent');
 
-  CalendarEvent.findOne({employeeId:id}, function(err, events) {
-    if(err){
-      console.log(err);
-      res.status(400).send("unable to find");
-    }else {
-      if(!events){
-        Employee.findByIdAndRemove({ _id: req.params.id }, function (err, employee) {
-          if (err) res.json(err);
-          else res.json("Employee Removed");
-        });
-      }
-      else {
-        console.log(events);
-        res.status(404).send("Can't delete this employee");
-      }
+  const LeaveAllocate = mongoose.model('LeaveAllocate');
+  try {
+    LeaveAllocate.findOne({employeeId:id}, function(err, events) {
+        if(events){
+          // console.log(events);
+          res.status(200).json({'status': false, 'Employee':'Can\'t delete this Employee. There are leave allocations for this employee'});
+        }else{
+          CalendarEvent.findOne({employeeName:id}, function(err, events) {
+              if(events){
+                // console.log(events);
+                res.status(200).json({'status': false, 'Employee':'Can\'t delete this Type. There are Leave requests for this employee'});
+              }else{
+                Employee.findByIdAndRemove({ _id: req.params.id }, function (err, leaveType) {
+                  if (err) res.json(err);
+                  else res.status(200).json({'status': true, 'Employee':'Employee Removed'});
+                });
+              }
 
-    }
-  }).exec();
+
+          }).exec();
+        }
+    }).exec();
+
+    // If no constraints, we can delete the document.
+
+
+  }catch (e) {
+    console.log(e.message)
+  }
+
+
 });
 
 //auth

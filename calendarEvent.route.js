@@ -19,6 +19,45 @@ const getDiffDays = (start, end) => {
 
 }
 
+const createCalenderEvent = (calendarEvent, res) => {
+    calendarEvent.save()
+        .then(async calendarEvent=>{
+            let transporter = nodemailer.createTransport({
+                host: "smtp.gmail.com",
+                port: 587,
+                secure: false, // true for 465, false for other ports
+                service: 'gmail',
+                auth: {
+                    user: 'shankaarunoda96@gmail.com', // generated ethereal user
+                    pass: 'A1996@shanka', // generated ethereal password
+                },
+            });
+
+            const mailOptions = {
+                from: calendarEvent.email, // sender address
+                to: calendarEvent.managerEmail, // list of receivers
+                subject: calendarEvent.leaveType + " - " + calendarEvent.employeeName + " (" + calendarEvent.startDate + " - " + calendarEvent.endDate + ") ", // Subject line
+                html: '<p>Hi ' + calendarEvent.manager + ',</p>' +
+                    '<a href=http://localhost:3000/leaves/edit/' + calendarEvent.id + '>Link</a>',
+            };
+
+            transporter.sendMail(mailOptions, function(error, info){
+                if (error) {
+                    console.log(error);
+                } else {
+                    console.log('Email sent: ' + info.response);
+                }
+            });
+
+
+
+            res.status(200).json({'status': true, 'calendarEvent':'new calendarEvent added success!'});
+        })
+        .catch(err =>{
+            res.status(400).send(err.message);
+        });
+}
+
 //POST DATA
 calendarEventRoutes.route('/add').post(function (req,res){
     const calendarEvent = new CalendarEvent(req.body);
@@ -26,63 +65,31 @@ calendarEventRoutes.route('/add').post(function (req,res){
     const LeaveAllocationModel = mongoose.model('LeaveAllocate');
 
     try{
-        LeaveAllocationModel.find({employeeId:req.body.employeeId, leaveTypeId:req.body.leaveTypeId, year:new Date().getFullYear().toString()}, function(err, allocations){
-            if(allocations){
-                const leaveAmount = allocations.reduce((accumulator, currentValue) => {return accumulator + currentValue.leaveAmount}, 0);
+        if(req.body.needLeaveAllocationValidation){
+            LeaveAllocationModel.find({employeeId:req.body.employeeId, leaveTypeId:req.body.leaveTypeId,leaveAllocate_status:true, year:new Date().getFullYear().toString()}, function(err, allocations){
+                if(allocations){
+                    const leaveAmount = allocations.reduce((accumulator, currentValue) => {return accumulator + currentValue.leaveAmount}, 0);
 
-                CalendarEvent.find({employeeId:req.body.employeeId, leaveTypeId:req.body.leaveTypeId, startDate: { $gte: new Date().getFullYear().toString()+'-01-01', $lte: new Date().getFullYear().toString()+'-12-31' }},function (err, CalendarEvents) {
-                    if (err)
-                        console.log(err.message)
-                    else {
-                        const leaveUsageAmount = CalendarEvents.reduce((accumulator, currentValue) => {return accumulator + currentValue.leaveAmount}, 0);
+                    CalendarEvent.find({employeeId:req.body.employeeId, leaveTypeId:req.body.leaveTypeId, startDate: { $gte: new Date().getFullYear().toString()+'-01-01', $lte: new Date().getFullYear().toString()+'-12-31' }},function (err, CalendarEvents) {
+                        if (err)
+                            console.log(err.message)
+                        else {
+                            const leaveUsageAmount = CalendarEvents.reduce((accumulator, currentValue) => {return accumulator + currentValue.leaveAmount}, 0);
 
-                        const leaveAvailableAmount = leaveAmount - (leaveUsageAmount + getDiffDays(req.body.startDate, req.body.endDate))
-                        if(leaveAvailableAmount > 0){
-                            calendarEvent.save()
-                                .then(async calendarEvent=>{
-                                    let transporter = nodemailer.createTransport({
-                                        host: "smtp.gmail.com",
-                                        port: 587,
-                                        secure: false, // true for 465, false for other ports
-                                        service: 'gmail',
-                                        auth: {
-                                            user: 'shankaarunoda96@gmail.com', // generated ethereal user
-                                            pass: 'A1996@shanka', // generated ethereal password
-                                        },
-                                    });
-
-                                    const mailOptions = {
-                                        from: calendarEvent.email, // sender address
-                                        to: calendarEvent.managerEmail, // list of receivers
-                                        subject: calendarEvent.leaveType + " - " + calendarEvent.employeeName + " (" + calendarEvent.startDate + " - " + calendarEvent.endDate + ") ", // Subject line
-                                        html: '<p>Hi ' + calendarEvent.manager + ',</p>' +
-                                            '<a href=http://localhost:3000/leaves/edit/' + calendarEvent.id + '>Link</a>',
-                                    };
-
-                                    transporter.sendMail(mailOptions, function(error, info){
-                                        if (error) {
-                                            console.log(error);
-                                        } else {
-                                            console.log('Email sent: ' + info.response);
-                                        }
-                                    });
-
-
-
-                                    res.status(200).json({'status': true, 'calendarEvent':'new calendarEvent added success!'});
-                                })
-                                .catch(err =>{
-                                    res.status(400).send(err.message);
-                                });
-                        }else{
-                            res.status(200).json({'status': false, 'calendarEvent':'No Leaves Available'});
+                            const leaveAvailableAmount = leaveAmount - (leaveUsageAmount + getDiffDays(req.body.startDate, req.body.endDate))
+                            if(leaveAvailableAmount > 0){
+                                createCalenderEvent(calendarEvent, res);
+                            }else{
+                                res.status(200).json({'status': false, 'calendarEvent':'No Leaves Available'});
+                            }
                         }
-                    }
-                })
-            }
+                    })
+                }
 
-        }).exec();
-
+            }).exec();
+        }else{
+            createCalenderEvent(calendarEvent, res);
+        }
     }catch (e) {
         console.log(e.message)
     }
@@ -100,7 +107,7 @@ calendarEventRoutes.route('/').get(function (req,res) {
             console.log(err)
         else {
             res.json(CalendarEvent)
-        };
+        }
     })
         .populate('employeeId', ['first_name', 'last_name'])
         .exec();

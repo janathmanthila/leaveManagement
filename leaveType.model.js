@@ -8,7 +8,22 @@ let leaveType = new Schema({
     leaveType:{
         type: String
     },
+    day_type:{
+        type: String
+    },
+    day_range:{
+        type: String
+    },
+    need_supportive:{
+        type: Boolean
+    },
+    need_allocation:{
+        type: Boolean
+    },
     leaveType_status:{
+        type: Boolean
+    },
+    year_restriction:{
         type: Boolean
     },
 },{

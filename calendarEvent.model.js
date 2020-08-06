@@ -52,6 +52,18 @@ let CalendarEvent = new Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:'Employee',
     },
+    day_type:{
+        type: String
+    },
+    day_range:{
+        type: String
+    },
+    startTime:{
+        type: String
+    },
+    endTime:{
+        type: String
+    },
 
 },{
     collection: 'CalendarEvent'
