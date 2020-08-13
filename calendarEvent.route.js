@@ -113,6 +113,19 @@ calendarEventRoutes.route('/').get(function (req,res) {
         .exec();
 });
 
+calendarEventRoutes.route('/getEmpLeaves/:id').get(function (req,res) {
+    let id = req.params.id;
+    CalendarEvent.find({employeeId:id}, function (err, CalendarEvent) {
+        if (err)
+            console.log(err)
+        else {
+            res.json(CalendarEvent)
+        }
+    })
+        .populate('employeeId', ['first_name', 'last_name'])
+        .exec();
+});
+
 
 // EDIT
 calendarEventRoutes.route('/edit/:id').get(function (req,res) {
